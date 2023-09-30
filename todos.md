@@ -6,11 +6,11 @@
 
 ### What methods are we going to use?
 
-- [ ] Get all users
-- [ ] Get a user
-- [ ] Create a user (sign up)
+- [x] Get all users
+- [x] Get a user
+- [x] Create a user (sign up)
 - [ ] Edit a user
-- [ ] Delete a user
+- [x] Delete a user
 - [ ] Login / Authenticate a user
 - [ ] Logout
 - [ ] Add deck to list
@@ -29,11 +29,11 @@
 
 ### what methods do we need?
 
-- [ ] Get all decks
-- [ ] Get a deck
-- [ ] Create a deck
+- [x] Get all decks
+- [x] Get a deck
+- [x] Create a deck
 - [ ] Edit a deck
-- [ ] Delete a deck
+- [x] Delete a deck
 - [ ] Toggle publicity
 - [ ] Add tag
 - [ ] Remove tag
@@ -44,8 +44,8 @@
 
 ### What methods do we need?
 
-- [ ] Get all cards
-- [ ] Get a card
-- [ ] Create a card
+- [x] Get all cards
+- [x] Get a card
+- [x] Create a card
 - [ ] Edit a card
-- [ ] Delete a card
+- [x] Delete a card
