@@ -3,7 +3,11 @@
 const express = require("express");
 const User = require("../models/user");
 const { NotFoundError } = require("../expressError");
-const router = new express.Router();
+
+const userRouter = new express.Router();
+const deckRouter = new express.Router({ mergeParams: true });
+
+userRouter.use("/:username/decks", deckRouter);
 
 /* Returns a list of users
   - optional filters: isPublic, isAdmin, username, firstName, lastName, orderBy 
@@ -11,7 +15,7 @@ const router = new express.Router();
   Authorization: Admin only
 */
 
-router.get("/", async function (req, res, next) {
+userRouter.get("/", async function (req, res, next) {
   const query = req.query;
 
   try {
@@ -28,7 +32,7 @@ router.get("/", async function (req, res, next) {
   Authorization: Admin / logged in user only
 */
 
-router.get("/:username", async function (req, res, next) {
+userRouter.get("/:username", async function (req, res, next) {
   const username = req.params.username;
 
   try {
@@ -48,7 +52,7 @@ router.get("/:username", async function (req, res, next) {
   Authorization: Admin / logged in user
 */
 
-router.post("/", async function (req, res, next) {
+userRouter.post("/", async function (req, res, next) {
   try {
     const user = await User.create(req.body);
     return res.status(201).json({ user });
@@ -65,7 +69,7 @@ router.post("/", async function (req, res, next) {
   Authorization: Admin, logged in user
 */
 
-router.delete("/:id", async function (req, res, next) {
+userRouter.delete("/:id", async function (req, res, next) {
   const id = req.params.id;
   try {
     await User.remove(id);
@@ -75,27 +79,4 @@ router.delete("/:id", async function (req, res, next) {
   }
 });
 
-router.get("/:username/decks", async function (req, res, next) {
-  const username = req.params.username;
-
-  try {
-    const decks = await User.getDecks(username);
-    return res.json({ decks });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-router.get("/:username/decks/:id", async function (req, res, next) {
-  const username = req.params.username;
-  const id = req.params.id;
-
-  try {
-    const deck = await User.getDeck(username, id);
-    return res.json({ deck });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-module.exports = router;
+module.exports = { userRouter, deckRouter };
