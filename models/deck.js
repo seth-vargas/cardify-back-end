@@ -9,31 +9,14 @@ class Deck {
     - Optional filters: username, isPublic, orderBy
   */
 
-  static async getAll({ username = null, isPublic = null, orderBy = "id" }) {
-    let query = `
-      SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
-      FROM decks`;
+  static async getAll(username) {
+    const result = await client.query(
+      `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
+      FROM decks
+      WHERE username = $1`,
+      [username]
+    );
 
-    let whereExpressions = [];
-    let queryValues = [];
-
-    if (username) {
-      queryValues.push(`%${username}%`);
-      whereExpressions.push(`username ILIKE $${queryValues.length}`);
-    }
-
-    if (isPublic) {
-      queryValues.push(isPublic);
-      whereExpressions.push(`is_public = $${queryValues.length}`);
-    }
-
-    if (whereExpressions.length > 0) {
-      query += " WHERE " + whereExpressions.join(" AND ");
-    }
-
-    query += ` ORDER BY ${orderBy}`;
-
-    const result = await client.query(query, queryValues);
     return result.rows;
   }
 
@@ -41,12 +24,13 @@ class Deck {
     - throws 404 if not found. 
   */
 
-  static async get(title) {
+  static async get(username, title) {
     const result = await client.query(
       `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
       FROM decks
-      WHERE slug = $1`,
-      [title]
+      WHERE username = $1
+      AND slug = $2`,
+      [username, title]
     );
 
     const deck = result.rows[0];

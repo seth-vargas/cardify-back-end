@@ -3,7 +3,8 @@
 const express = require("express");
 const Deck = require("../models/deck");
 const { NotFoundError } = require("../expressError");
-const router = new express.Router();
+// const router = new express.Router();
+const { deckRouter } = require("./users");
 
 /* Returns a list of decks
   - optional filters: username, isPublic, orderBy
@@ -11,11 +12,11 @@ const router = new express.Router();
   Authorization: Admin / logged in user
 */
 
-router.get("/", async function (req, res, next) {
-  const query = req.query;
+deckRouter.get("/", async function (req, res, next) {
+  const { username } = req.params;
 
   try {
-    const decks = await Deck.getAll(query);
+    const decks = await Deck.getAll(username);
     return res.json({ decks });
   } catch (error) {
     return next(error);
@@ -28,11 +29,11 @@ router.get("/", async function (req, res, next) {
   Authorization: Admin / logged in user only
 */
 
-router.get("/:title", async function (req, res, next) {
-  const title = req.params.title;
+deckRouter.get("/:title", async function (req, res, next) {
+  const { username, title } = req.params;
 
   try {
-    const deck = await Deck.get(title);
+    const deck = await Deck.get(username, title);
 
     // if (!deck) throw new NotFoundError(`No deck: ${title}`);
 
@@ -48,7 +49,9 @@ router.get("/:title", async function (req, res, next) {
   Authorization: Admin / logged in user
 */
 
-router.post("/", async function (req, res, next) {
+deckRouter.post("/", async function (req, res, next) {
+  const username = req.params.username;
+
   try {
     const deck = await Deck.create(req.body);
     return res.status(201).json({ deck });
@@ -65,14 +68,16 @@ router.post("/", async function (req, res, next) {
   Authorization: Admin, logged in user
 */
 
-router.delete("/:id", async function (req, res, next) {
-  const id = req.params.id;
+deckRouter.delete("/:title", async function (req, res, next) {
+  const title = req.params.title;
+  const username = req.params.username;
+
   try {
-    await Deck.remove(id);
-    return res.json({ deleted: id });
+    await Deck.remove(title);
+    return res.json({ deleted: title });
   } catch (error) {
     return next(error);
   }
 });
 
-module.exports = router;
+module.exports = deckRouter;
