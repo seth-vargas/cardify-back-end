@@ -86,6 +86,37 @@ class User {
     return user;
   }
 
+  /* Get decks from a user => { decks : [ { deckId, ... } ] } 
+    - returns { decks : [] } if none are found
+  */
+  static async getDecks(username) {
+    const result = await client.query(
+      `SELECT id, title, username, is_public AS "isPublic", created_at AS "createdAt"
+     FROM decks 
+     WHERE username = $1`,
+      [username]
+    );
+
+    return result.rows;
+  }
+
+  /* Get deck from a user => { deck: { deckId, ... } }
+    - Returns 404 if not found
+  */
+
+  static async getDeck(username, slug) {
+    const result = await client.query(
+      `SELECT id, title, username, is_public AS "isPublic", created_at AS "createdAt"
+      FROM decks
+      WHERE username = $1
+      AND
+      slug = $2`,
+      [username, slug]
+    );
+
+    return result.rows[0];
+  }
+
   /* Add a new user to db and return JSON of created user data => {user: {<user>}}
     - throws 404 error if not found. 
     - If user exists then throw bad request error.
@@ -146,6 +177,27 @@ class User {
     const user = result.rows[0];
 
     if (!user) throw new NotFoundError(`No user username: ${username}`);
+  }
+
+  // TODO: Follow user / Un-follow user
+  static async toggleFollowUser(followedUsername, followingUsername) {
+    // check if followed user and following user already have a relationship
+    // if they do, remove the relationship => {message: "<FOLLOWING_USERNAME> unsubscribed from <FOLLOWED_USERNAME>'s feed."}
+    // if they do not, create a relationship => {message: "<FOLLOWING_USERNAME> subscribed to <FOLLOWED_USERNAME>'s feed."}
+  }
+
+  // TODO: Favorite a deck / Un-favorite a deck
+  static async toggleFavoriteDeck(deckId, username) {
+    // check if this deck is already favorited
+    // if it is, remove from favorites => {message: "removed <DECK_TITLE> from <USERNAME>'s favorites"}
+    // if it is not, add to favorites => {message: "added <DECK_TITLE> to <USERNAME>'s favorites"}
+  }
+
+  // TODO: Pin a deck / Un-pin a deck
+  static async togglePinnedDeck(deckId, username) {
+    // check if this deck is already pinned
+    // if it is, remove from pins => {message: "<USERNAME> removed <DECK_TITLE> from their pinned list."}
+    // if it is not, add to pins => {message: "<USERNAME> added <DECK_TITLE> to their pinned list."}
   }
 }
 

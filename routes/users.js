@@ -75,4 +75,27 @@ router.delete("/:id", async function (req, res, next) {
   }
 });
 
+router.get("/:username/decks", async function (req, res, next) {
+  const username = req.params.username;
+
+  try {
+    const decks = await User.getDecks(username);
+    return res.json({ decks });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get("/:username/decks/:id", async function (req, res, next) {
+  const username = req.params.username;
+  const id = req.params.id;
+
+  try {
+    const deck = await User.getDeck(username, id);
+    return res.json({ deck });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 module.exports = router;

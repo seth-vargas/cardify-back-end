@@ -1,3 +1,4 @@
+const slug = require("slug");
 const client = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
 
@@ -10,7 +11,7 @@ class Deck {
 
   static async getAll({ username = null, isPublic = null, orderBy = "id" }) {
     let query = `
-      SELECT id, title, username, is_public AS "isPublic", created_at AS "createdAt"
+      SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
       FROM decks`;
 
     let whereExpressions = [];
@@ -40,23 +41,23 @@ class Deck {
     - throws 404 if not found. 
   */
 
-  static async get(id) {
+  static async get(title) {
     const result = await client.query(
-      `SELECT id, title, username, is_public AS "isPublic", created_at AS "createdAt"
+      `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
       FROM decks
-      WHERE id = $1`,
-      [id]
+      WHERE slug = $1`,
+      [title]
     );
 
     const deck = result.rows[0];
 
-    if (!deck) throw new NotFoundError(`Deck not found: ${id}`);
+    if (!deck) throw new NotFoundError(`Deck not found: ${title}`);
 
     const cardResult = await client.query(
       `SELECT id, deck_id, username, front, back, created_at
       FROM cards
       WHERE deck_id = $1`,
-      [id]
+      [deck.id]
     );
 
     deck.cards = cardResult.rows;
@@ -64,16 +65,20 @@ class Deck {
     return deck;
   }
 
-  /* create(data) - add new deck to db and return JSON of new deck => {deck: {<deck>}}
-    throws 404 if not found. */
+  /* create(data) - add new deck to db and return JSON of new deck => {deck: {<deck>}} */
 
   static async create({ title, userId, isPublic }) {
     const query = `
       INSERT INTO 
-        decks (title, username, is_public)
-      VALUES ($1, $2, $3)
-      RETURNING id, title, username, is_public AS "isPublic", created_at AS "createdAt"`;
-    const result = await client.query(query, [title, userId, isPublic]);
+        decks (title, slug, username, is_public)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"`;
+    const result = await client.query(query, [
+      title,
+      slug(title),
+      userId,
+      isPublic,
+    ]);
 
     return result.rows[0];
   }
@@ -98,6 +103,14 @@ class Deck {
     const deck = result.rows[0];
 
     if (!deck) throw new NotFoundError(`No deck: ${id}`);
+  }
+
+  // TODO: Get AI generated questions for each card in a deck
+  static async getAIGeneratedQuestions(deckId) {
+    // get cards in this deck
+    // send cards to AI along with prompt (perhaps use the deck title as a base to jump from for the prompt?)
+    // get back 3 incorrect answers for the card
+    // return => {cards: [{front (question), back (answer), incorrectAnswer1, incorrectAnswer2, incorrectAnswer3}, ...]}
   }
 }
 

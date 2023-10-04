@@ -28,13 +28,13 @@ router.get("/", async function (req, res, next) {
   Authorization: Admin / logged in user only
 */
 
-router.get("/:id", async function (req, res, next) {
-  const id = req.params.id;
+router.get("/:title", async function (req, res, next) {
+  const title = req.params.title;
 
   try {
-    const deck = await Deck.get(id);
+    const deck = await Deck.get(title);
 
-    if (!deck) throw new NotFoundError(`No deck: ${id}`);
+    // if (!deck) throw new NotFoundError(`No deck: ${title}`);
 
     return res.json({ deck });
   } catch (error) {

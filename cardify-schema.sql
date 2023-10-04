@@ -25,6 +25,7 @@ CREATE TABLE
     decks (
         id SERIAL PRIMARY KEY,
         title VARCHAR(50) NOT NULL,
+        slug VARCHAR(255) NOT NULL,
         username TEXT NOT NULL REFERENCES users (username) ON DELETE CASCADE,
         is_public BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMP NOT NULL DEFAULT now (),
@@ -112,11 +113,16 @@ VALUES
 
 -- Insert data into decks table
 INSERT INTO
-    decks (title, username, is_public)
+    decks (title, slug, username, is_public)
 VALUES
-    ('Programming Basics', 'user1', true),
-    ('Science Trivia', 'user2', true),
-    ('Math Quiz', 'user1', false);
+    (
+        'Programming Basics',
+        'programming-basics',
+        'user1',
+        true
+    ),
+    ('Science Trivia', 'science-trivia', 'user2', true),
+    ('Math Quiz', 'math-quiz', 'user1', false);
 
 -- Insert data into cards table for Programming Basics (Deck ID: 1)
 INSERT INTO
