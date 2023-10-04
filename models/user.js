@@ -86,37 +86,6 @@ class User {
     return user;
   }
 
-  /* Get decks from a user => { decks : [ { deckId, ... } ] } 
-    - returns { decks : [] } if none are found
-  */
-  static async getDecks(username) {
-    const result = await client.query(
-      `SELECT id, title, username, is_public AS "isPublic", created_at AS "createdAt"
-     FROM decks 
-     WHERE username = $1`,
-      [username]
-    );
-
-    return result.rows;
-  }
-
-  /* Get deck from a user => { deck: { deckId, ... } }
-    - Returns 404 if not found
-  */
-
-  static async getDeck(username, slug) {
-    const result = await client.query(
-      `SELECT id, title, username, is_public AS "isPublic", created_at AS "createdAt"
-      FROM decks
-      WHERE username = $1
-      AND
-      slug = $2`,
-      [username, slug]
-    );
-
-    return result.rows[0];
-  }
-
   /* Add a new user to db and return JSON of created user data => {user: {<user>}}
     - throws 404 error if not found. 
     - If user exists then throw bad request error.
@@ -131,7 +100,14 @@ class User {
     isAdmin,
     isPublic,
   }) {
-    if (User.get(username)) {
+    const user = await client.query(
+      `SELECT id 
+      FROM users 
+      WHERE username = $1`,
+      [username]
+    );
+
+    if (user.rows[0]) {
       throw new BadRequestError(`Username ${username} exists.`);
     }
 

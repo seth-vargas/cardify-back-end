@@ -34,9 +34,6 @@ deckRouter.get("/:title", async function (req, res, next) {
 
   try {
     const deck = await Deck.get(username, title);
-
-    // if (!deck) throw new NotFoundError(`No deck: ${title}`);
-
     return res.json({ deck });
   } catch (error) {
     return next(error);
@@ -69,11 +66,10 @@ deckRouter.post("/", async function (req, res, next) {
 */
 
 deckRouter.delete("/:title", async function (req, res, next) {
-  const title = req.params.title;
-  const username = req.params.username;
+  const { username, title } = req.params;
 
   try {
-    await Deck.remove(title);
+    await Deck.remove(username, title);
     return res.json({ deleted: title });
   } catch (error) {
     return next(error);

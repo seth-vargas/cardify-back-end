@@ -10,14 +10,27 @@ class Deck {
   */
 
   static async getAll(username) {
-    const result = await client.query(
+    const deckResult = await client.query(
       `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
       FROM decks
       WHERE username = $1`,
       [username]
     );
 
-    return result.rows;
+    const decks = deckResult.rows;
+
+    for (const deck of decks) {
+      const cardResult = await client.query(
+        `SELECT id, deck_id, username, front, back, created_at
+        FROM cards
+        WHERE deck_id = $1`,
+        [deck.id]
+      );
+
+      deck.cards = cardResult.rows;
+    }
+
+    return decks;
   }
 
   /* Return JSON of found deck => {deck: {<deck, cards: [<card>, ...]>}}
@@ -51,7 +64,7 @@ class Deck {
 
   /* create(data) - add new deck to db and return JSON of new deck => {deck: {<deck>}} */
 
-  static async create({ title, userId, isPublic }) {
+  static async create({ title, username, isPublic }) {
     const query = `
       INSERT INTO 
         decks (title, slug, username, is_public)
@@ -60,7 +73,7 @@ class Deck {
     const result = await client.query(query, [
       title,
       slug(title),
-      userId,
+      username,
       isPublic,
     ]);
 
@@ -76,13 +89,14 @@ class Deck {
   /* Removes deck from db and return succes / fail message => {<message>}
     throws 404 if not found. */
 
-  static async remove(id) {
+  static async remove(username, title) {
     const result = await client.query(
       `DELETE
         FROM decks
-        WHERE id = $1
+        WHERE username = $1
+        AND slug = $2
         RETURNING id`,
-      [id]
+      [username, slug(title)]
     );
     const deck = result.rows[0];
 
