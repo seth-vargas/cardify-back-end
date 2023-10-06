@@ -3,7 +3,10 @@
 const express = require("express");
 const Card = require("../models/card");
 const { NotFoundError } = require("../expressError");
-const router = new express.Router();
+const { deckRouter } = require("./decks");
+
+const cardRouter = new express.Router({ mergeParams: true });
+deckRouter.use("/:deckId/cards", cardRouter);
 
 /** GET /  =>
  *   { cards: [ { id, deck_id, username, front, back, created_at}, ...] }
@@ -15,7 +18,7 @@ const router = new express.Router();
  * Authorization required: none
  */
 
-router.get("/", async function (req, res, next) {
+cardRouter.get("/", async function (req, res, next) {
   const query = req.query;
 
   if (query.deckId !== undefined) query.deckId = +query.deckId;
@@ -32,7 +35,7 @@ router.get("/", async function (req, res, next) {
  *    { card: {id, deck_id, username, front, back, created_at}}
  */
 
-router.get("/:id", async function (req, res, next) {
+cardRouter.get("/:id", async function (req, res, next) {
   const id = req.params.id;
 
   try {
@@ -49,7 +52,7 @@ router.get("/:id", async function (req, res, next) {
  *    {card: {id, deck_id, username, front, back, created_at}}
  */
 
-router.post("/", async function (req, res, next) {
+cardRouter.post("/", async function (req, res, next) {
   try {
     const card = await Card.create(req.body);
     return res.status(201).json({ card });
@@ -65,7 +68,7 @@ router.post("/", async function (req, res, next) {
  * Authorization: admin
  */
 
-router.delete("/:id", async function (req, res, next) {
+cardRouter.delete("/:id", async function (req, res, next) {
   const id = req.params.id;
   try {
     await Card.remove(id);
@@ -75,4 +78,4 @@ router.delete("/:id", async function (req, res, next) {
   }
 });
 
-module.exports = router;
+module.exports = cardRouter;

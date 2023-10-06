@@ -3,8 +3,10 @@
 const express = require("express");
 const Deck = require("../models/deck");
 const { NotFoundError } = require("../expressError");
-// const router = new express.Router();
-const { deckRouter } = require("./users");
+const { userRouter } = require("./users");
+
+const deckRouter = new express.Router({ mergeParams: true });
+userRouter.use("/:username/decks", deckRouter);
 
 /* Returns a list of decks
   - optional filters: username, isPublic, orderBy
@@ -76,4 +78,4 @@ deckRouter.delete("/:title", async function (req, res, next) {
   }
 });
 
-module.exports = deckRouter;
+module.exports = { deckRouter };

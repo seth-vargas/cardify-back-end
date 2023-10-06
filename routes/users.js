@@ -5,9 +5,6 @@ const User = require("../models/user");
 const { NotFoundError } = require("../expressError");
 
 const userRouter = new express.Router();
-const deckRouter = new express.Router({ mergeParams: true });
-
-userRouter.use("/:username/decks", deckRouter);
 
 /* Returns a list of users
   - optional filters: isPublic, isAdmin, username, firstName, lastName, orderBy 
@@ -79,4 +76,5 @@ userRouter.delete("/:id", async function (req, res, next) {
   }
 });
 
-module.exports = { userRouter, deckRouter };
+// module.exports = { userRouter, deckRouter };
+module.exports = { userRouter };

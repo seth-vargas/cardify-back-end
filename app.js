@@ -12,10 +12,9 @@ const app = express();
 
 app.use(express.json());
 app.use(morgan("dev"));
-app.use("/cards", cardRoutes);
-app.use("/users", userRouter);
 
-// app.use("/users/:username/decks", deckRoutes);
+app.use("/cards", cardRoutes);
+app.use("/api/users", userRouter);
 
 app.use((req, res, next) => {
   return next(new NotFoundError());
