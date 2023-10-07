@@ -6,7 +6,7 @@ const { NotFoundError } = require("../expressError");
 const { deckRouter } = require("./decks");
 
 const cardRouter = new express.Router({ mergeParams: true });
-deckRouter.use("/:deckId/cards", cardRouter);
+deckRouter.use("/:slug/cards", cardRouter);
 
 /** GET /  =>
  *   { cards: [ { id, deck_id, username, front, back, created_at}, ...] }
@@ -19,12 +19,10 @@ deckRouter.use("/:deckId/cards", cardRouter);
  */
 
 cardRouter.get("/", async function (req, res, next) {
-  const query = req.query;
-
-  if (query.deckId !== undefined) query.deckId = +query.deckId;
+  const { username, slug } = req.params;
 
   try {
-    const cards = await Card.getAll(query);
+    const cards = await Card.getAll(username, slug);
     return res.json({ cards });
   } catch (error) {
     return next(error);

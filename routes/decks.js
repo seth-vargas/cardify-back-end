@@ -18,7 +18,7 @@ deckRouter.get("/", async function (req, res, next) {
   const { username } = req.params;
 
   try {
-    const decks = await Deck.getAll(username);
+    const decks = await Deck.getAll(username, req.query);
     return res.json({ decks });
   } catch (error) {
     return next(error);
