@@ -1,5 +1,6 @@
 const client = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
+const Deck = require("./deck");
 
 /* Model for users */
 
@@ -18,7 +19,7 @@ class User {
     orderBy = "id",
   }) {
     let query = `
-    SELECT username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"
+    SELECT id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"
     FROM users`;
 
     let whereExpressions = [];
@@ -63,9 +64,9 @@ class User {
     - throws 404 if not found. 
   */
 
-  static async get(username) {
+  static async getOr404(username) {
     const result = await client.query(
-      `SELECT username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"
+      `SELECT id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"
       FROM users 
       WHERE username = $1`,
       [username]
@@ -74,20 +75,14 @@ class User {
 
     if (!user) throw new NotFoundError(`User not found: ${username}`);
 
-    const deckResult = await client.query(
-      `SELECT title, is_public AS "isPublic", created_at AS "createdAt"
-      FROM decks
-      WHERE username = $1`,
-      [username]
-    );
-
-    user.decks = deckResult.rows;
+    user.decks = await Deck.getAll(username, {});
+    user.followers = await User.getFollowers(username);
+    user.following = await User.getFollowing(username);
 
     return user;
   }
 
   /* Add a new user to db and return JSON of created user data => {user: {<user>}}
-    - throws 404 error if not found. 
     - If user exists then throw bad request error.
   */
 
@@ -142,8 +137,7 @@ class User {
 
   static async remove(username) {
     const result = await client.query(
-      `
-    DELETE 
+      `DELETE 
       FROM users
       WHERE username = $1
       RETURNING username`,
@@ -155,11 +149,130 @@ class User {
     if (!user) throw new NotFoundError(`No user username: ${username}`);
   }
 
-  // TODO: Follow user / Un-follow user
-  static async toggleFollowUser(followedUsername, followingUsername) {
+  /* Follow another user and return success/error message
+    - user cannot follow themselves.
+    - if either user cannot be found, throw 404 error.
+  */
+
+  static async follow(follower, followed) {
+    // check follower is not followed
+    if (follower === followed)
+      throw new BadRequestError("User cannot follow themselves. Loser.");
+
+    // check if both users exist
+    const [followingUser, followedUser] = await Promise.all([
+      User.getOr404(follower),
+      User.getOr404(followed),
+    ]);
+
     // check if followed user and following user already have a relationship
-    // if they do, remove the relationship => {message: "<FOLLOWING_USERNAME> unsubscribed from <FOLLOWED_USERNAME>'s feed."}
-    // if they do not, create a relationship => {message: "<FOLLOWING_USERNAME> subscribed to <FOLLOWED_USERNAME>'s feed."}
+    const followsResult = await client.query(
+      `SELECT id FROM follows WHERE followed_user_id = $1 AND following_user_id = $2`,
+      [followedUser.id, followingUser.id]
+    );
+
+    const follows = followsResult.rows[0];
+
+    if (follows)
+      throw new BadRequestError(
+        `${followingUser.username} is already following ${followedUser.username}.`
+      );
+
+    // create a relationship => {message: "<FOLLOWING_USERNAME> subscribed to <FOLLOWED_USERNAME>'s feed."}
+    const insertResult = await client.query(
+      `INSERT INTO follows (following_user_id, followed_user_id)
+      VALUES ($1, $2)
+      RETURNING id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"`,
+      [followingUser.id, followedUser.id]
+    );
+
+    const result = insertResult.rows[0];
+    result.message = `${follower} subscribed to ${followed}'s feed.`;
+    return result;
+  }
+
+  /* Unfollow another user and return success/error message.
+    - User cannot unfollow someone who they do not follow.
+    - if either user cannot be found, throw 404 error.
+  */
+
+  static async unfollow(follower, followed) {
+    // check that both users exist
+    const [followingUser, followedUser] = await Promise.all([
+      User.getOr404(follower),
+      User.getOr404(followed),
+    ]);
+
+    // check if followed user and following user already have a relationship
+    const followsResult = await client.query(
+      `SELECT id FROM follows WHERE followed_user_id = $1 AND following_user_id = $2`,
+      [followedUser.id, followingUser.id]
+    );
+
+    const follows = followsResult.rows[0];
+
+    if (!follows)
+      throw new BadRequestError(
+        `${followingUser.username} is not following ${followedUser.username}`
+      );
+
+    const deleteResult = await client.query(
+      `DELETE
+      FROM follows
+      WHERE id = $1
+      RETURNING id`,
+      [follows.id]
+    );
+
+    return `${follower} successfully unfollowed ${followed}.`;
+  }
+
+  /* Get a list of users who follow user.
+    - throws 404 error if user not in db
+  */
+
+  static async getFollowers(username) {
+    // check if user exists
+    const userResult = await client.query(
+      "SELECT id FROM users WHERE username = $1",
+      [username]
+    );
+    const user = userResult.rows[0];
+
+    if (!user) throw new NotFoundError(`User not found: ${username}`);
+
+    const followsResult = await client.query(
+      `SELECT id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"
+      FROM follows
+      WHERE followed_user_id = $1`,
+      [user.id]
+    );
+
+    return followsResult.rows;
+  }
+
+  /* Get a list of users who the user follows
+    - throws 404 error if user not in db
+  */
+
+  static async getFollowing(username) {
+    // check if user exists
+    const userResult = await client.query(
+      "SELECT id FROM users WHERE username = $1",
+      [username]
+    );
+    const user = userResult.rows[0];
+
+    if (!user) throw new NotFoundError(`User not found: ${username}`);
+
+    const followingResult = await client.query(
+      `SELECT id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"
+      FROM follows
+      WHERE following_user_id = $1`,
+      [user.id]
+    );
+
+    return followingResult.rows;
   }
 
   // TODO: Favorite a deck / Un-favorite a deck
