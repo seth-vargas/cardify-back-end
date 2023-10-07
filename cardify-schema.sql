@@ -29,6 +29,8 @@ CREATE TABLE
         username TEXT NOT NULL REFERENCES users (username) ON DELETE CASCADE,
         is_public BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMP NOT NULL DEFAULT now (),
+        -- TODO: Fix this, it is not working
+        -- UNIQUE (username, title, slug)
         UNIQUE (username, title)
     );
 
@@ -36,6 +38,8 @@ CREATE TABLE
     cards (
         id SERIAL PRIMARY KEY,
         deck_id INTEGER NOT NULL REFERENCES decks (id) ON DELETE CASCADE,
+        -- TODO: Fix this, it is not working :( 
+        -- deck_slug TEXT NOT NULL REFERENCES decks (slug) ON DELETE CASCADE,
         username TEXT NOT NULL REFERENCES users (username) ON DELETE CASCADE,
         front VARCHAR(50) NOT NULL,
         back VARCHAR(100) NOT NULL,
@@ -59,6 +63,7 @@ CREATE TABLE
 
 CREATE TABLE
     favorites (
+        id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users (id) ON DELETE CASCADE,
         deck_id INTEGER NOT NULL REFERENCES decks (id) ON DELETE CASCADE,
         created_at TIMESTAMP NOT NULL DEFAULT now ()
@@ -66,6 +71,7 @@ CREATE TABLE
 
 CREATE TABLE
     follows (
+        id SERIAL PRIMARY KEY,
         following_user_id INTEGER REFERENCES users (id) ON DELETE CASCADE,
         followed_user_id INTEGER REFERENCES users (id) ON DELETE CASCADE,
         created_at TIMESTAMP NOT NULL DEFAULT now ()
