@@ -13,9 +13,9 @@
 - [x] Delete a user
 - [ ] Login / Authenticate a user
 - [ ] Logout
-- [ ] Add deck to list
-- [ ] Follow a user
-- [ ] Unfollow a user
+- [x] Add deck to list
+- [x] Follow a user
+- [x] Unfollow a user
 - [ ] Pin a deck
 - [ ] Un-pin a deck
 - [ ] Like a deck
