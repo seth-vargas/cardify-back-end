@@ -6,31 +6,14 @@ const { BadRequestError, NotFoundError } = require("../expressError");
 class Card {
   /* getAll - returns a list of all relevant cards */
 
-  static async getAll({ deckId = null, username = null, orderBy = "id" }) {
-    let query = `
-    SELECT id, deck_id AS "deckId", username, front, back, created_at AS "createdAt"
-    FROM cards`;
-
-    let whereExpressions = [];
-    let queryValues = [];
-
-    if (deckId) {
-      queryValues.push(deckId);
-      whereExpressions.push(`deck_id = $${queryValues.length}`);
-    }
-
-    if (username) {
-      queryValues.push(`%${username}%`);
-      whereExpressions.push(`username ILIKE $${queryValues.length}`);
-    }
-
-    if (whereExpressions.length > 0) {
-      query += " WHERE " + whereExpressions.join(" AND ");
-    }
-
-    query += ` ORDER BY ${orderBy}`;
-
-    const result = await client.query(query, queryValues);
+  static async getAll(username, slug) {
+    const result = await client.query(
+      `SELECT id, deck_id AS "deckId", username, front, back, created_at AS "createdAt"
+      FROM cards
+      WHERE username = $1
+      AND slug = $2`,
+      [username, slug]
+    );
     return result.rows;
   }
 
