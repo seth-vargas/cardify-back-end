@@ -1,21 +1,37 @@
 const slug = require("slug");
 const client = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
+const { isPromise } = require("util/types");
 
 /* Model for decks */
 
 class Deck {
-  /* Return list of all relevant decks => {decks: [{<deck>}, ...]}
-    - Optional filters: username, isPublic, orderBy
-  */
+  /* Return list of all relevant decks => {decks: [{<deck>}, ...]} */
 
-  static async getAll(username) {
-    const deckResult = await client.query(
-      `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
-      FROM decks
-      WHERE username = $1`,
+  static async getAll(username, { isPublic = null }) {
+    const userResult = await client.query(
+      `SELECT id from users where username = $1`,
       [username]
     );
+
+    if (!userResult.rows[0])
+      throw new NotFoundError(`No user found with username: ${username}`);
+
+    let query = `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt" FROM decks`;
+
+    let queryValues = [username];
+    let whereExpressions = [`username = $${queryValues.length}`];
+
+    if (isPublic) {
+      queryValues.push(isPublic);
+      whereExpressions.push(`is_public = $${queryValues.length}`);
+    }
+
+    if (whereExpressions.length > 0) {
+      query += " WHERE " + whereExpressions.join(" AND ");
+    }
+
+    const deckResult = await client.query(query, queryValues);
 
     const decks = deckResult.rows;
 
