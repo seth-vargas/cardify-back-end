@@ -76,8 +76,10 @@ class User {
     if (!user) throw new NotFoundError(`User not found: ${username}`);
 
     user.decks = await Deck.getAll(username, {});
-    user.followers = await User.getFollowers(username);
-    user.following = await User.getFollowing(username);
+    user.followers = await User.getFollowers(user);
+    user.following = await User.getFollowing(user);
+    user.favorites = await User.getFavorites(user);
+    // user.pinned = await User.getPinned(user); TODO:
 
     return user;
   }
@@ -149,10 +151,36 @@ class User {
     if (!user) throw new NotFoundError(`No user username: ${username}`);
   }
 
+  /* Get a list of users who follow user. */
+
+  static async getFollowers(user) {
+    const followsResult = await client.query(
+      `SELECT id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"
+          FROM follows
+          WHERE followed_user_id = $1`,
+      [user.id]
+    );
+
+    return followsResult.rows;
+  }
+
+  /* Get a list of users who the user follows. */
+
+  static async getFollowing(user) {
+    const followingResult = await client.query(
+      `SELECT id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"
+          FROM follows
+          WHERE following_user_id = $1`,
+      [user.id]
+    );
+
+    return followingResult.rows;
+  }
+
   /* Follow another user and return success/error message
     - user cannot follow themselves.
     - if either user cannot be found, throw 404 error.
-  */
+    */
 
   static async follow(follower, followed) {
     // check follower is not followed
@@ -227,66 +255,62 @@ class User {
     return `${follower} successfully unfollowed ${followed}.`;
   }
 
-  /* Get a list of users who follow user.
-    - throws 404 error if user not in db
-  */
-
-  static async getFollowers(username) {
-    // check if user exists
-    const userResult = await client.query(
-      "SELECT id FROM users WHERE username = $1",
-      [username]
-    );
-    const user = userResult.rows[0];
-
-    if (!user) throw new NotFoundError(`User not found: ${username}`);
-
-    const followsResult = await client.query(
-      `SELECT id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"
-      FROM follows
-      WHERE followed_user_id = $1`,
+  static async getFavorites(user) {
+    const favoritesResult = await client.query(
+      `SELECT id, user_id AS "userId", deck_id AS "deckId", created_at AS "createdAt"
+      FROM favorites
+      WHERE user_id = $1`,
       [user.id]
     );
 
-    return followsResult.rows;
+    return favoritesResult.rows;
   }
 
-  /* Get a list of users who the user follows
-    - throws 404 error if user not in db
-  */
+  static async addDeckToFavorites(username, deckSlug) {
+    const [user, deck] = await Promise.all([
+      User.getOr404(username),
+      Deck.getOr404(deckSlug),
+    ]);
 
-  static async getFollowing(username) {
-    // check if user exists
-    const userResult = await client.query(
-      "SELECT id FROM users WHERE username = $1",
-      [username]
-    );
-    const user = userResult.rows[0];
-
-    if (!user) throw new NotFoundError(`User not found: ${username}`);
-
-    const followingResult = await client.query(
-      `SELECT id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"
-      FROM follows
-      WHERE following_user_id = $1`,
-      [user.id]
+    const insertResult = await client.query(
+      `INSERT INTO favorites (user_id, deck_id)
+      VALUES ($1, $2)
+      RETURNING id, user_id AS "userId", deck_id AS "deckId", created_at AS "createdAt"`,
+      [user.id, deck.id]
     );
 
-    return followingResult.rows;
+    const result = insertResult.rows[0];
+    result.message = `${username} added ${deck.title} to their favorites.`;
+
+    return result;
   }
 
-  // TODO: Favorite a deck / Un-favorite a deck
-  static async toggleFavoriteDeck(deckId, username) {
-    // check if this deck is already favorited
-    // if it is, remove from favorites => {message: "removed <DECK_TITLE> from <USERNAME>'s favorites"}
-    // if it is not, add to favorites => {message: "added <DECK_TITLE> to <USERNAME>'s favorites"}
-  }
+  static async removeDeckFromFavorites(username, deckSlug) {
+    const [user, deck] = await Promise.all([
+      User.getOr404(username),
+      Deck.getOr404(deckSlug),
+    ]);
 
-  // TODO: Pin a deck / Un-pin a deck
-  static async togglePinnedDeck(deckId, username) {
-    // check if this deck is already pinned
-    // if it is, remove from pins => {message: "<USERNAME> removed <DECK_TITLE> from their pinned list."}
-    // if it is not, add to pins => {message: "<USERNAME> added <DECK_TITLE> to their pinned list."}
+    const favoritesResult = await client.query(
+      `SELECT id FROM favorites WHERE user_id = $1 AND deck_id = $2`,
+      [user.id, deck.id]
+    );
+
+    const favorites = favoritesResult.rows[0];
+
+    if (!favorites)
+      throw new BadRequestError(
+        `${user.username} has not favorited deck ${deck.title}`
+      );
+
+    const deleteResult = await client.query(
+      `DELETE FROM favorites
+      WHERE id = $1
+      RETURNING id`,
+      [favorites.id]
+    );
+
+    return `${username} successfully removed ${deck.title} from their favorites list.`;
   }
 }
 
