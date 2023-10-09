@@ -50,6 +50,7 @@ deckRouter.get("/:title", async function (req, res, next) {
 
 deckRouter.post("/", async function (req, res, next) {
   const username = req.params.username;
+  req.body.username = username;
 
   try {
     const deck = await Deck.create(req.body);
