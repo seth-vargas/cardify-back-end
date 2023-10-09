@@ -151,6 +151,165 @@ class User {
 
     if (!user) throw new NotFoundError(`No user username: ${username}`);
   }
+
+  /* Follow another user and return success/error message
+    - if either user cannot be found, throw 404 error.
+    - Throw 500 error if:
+      - User tries to follow themselves
+      - Follower is already following followed user
+  */
+
+  static async follow(follower, followed) {
+    // check follower is not followed
+    if (follower === followed)
+      throw new BadRequestError("User cannot follow themselves. Loser.");
+
+    // check if both users exist
+    const [followingUser, followedUser] = await Promise.all([
+      User.getOr404(follower),
+      User.getOr404(followed),
+    ]);
+
+    // check if followed user and following user already have a relationship
+    const followsResult = await client.query(
+      `SELECT id FROM follows WHERE followed_user_id = $1 AND following_user_id = $2`,
+      [followedUser.id, followingUser.id]
+    );
+
+    const follows = followsResult.rows[0];
+
+    if (follows)
+      throw new BadRequestError(
+        `${followingUser.username} is already following ${followedUser.username}.`
+      );
+
+    // create a relationship => {message: "<FOLLOWING_USERNAME> subscribed to <FOLLOWED_USERNAME>'s feed."}
+    const insertResult = await client.query(
+      `INSERT INTO follows (following_user_id, followed_user_id)
+          VALUES ($1, $2)
+          RETURNING id, following_user_id AS "followingUserId", followed_user_id AS "followedUserId", created_at AS "createdAt"`,
+      [followingUser.id, followedUser.id]
+    );
+
+    const result = insertResult.rows[0];
+    result.message = `${follower} subscribed to ${followed}'s feed.`;
+    return result;
+  }
+
+  /* Unfollow another user and return success/error message.
+      - if either user cannot be found, throw 404 error.
+      - Throw 500 error if:
+        - User tries to unfollow themselves
+        - Follower is not following followed user
+    */
+
+  static async unfollow(follower, followed) {
+    // check that both users exist
+    const [followingUser, followedUser] = await Promise.all([
+      User.getOr404(follower),
+      User.getOr404(followed),
+    ]);
+
+    // check follower is not followed
+    if (follower === followed)
+      throw new BadRequestError("User cannot unfollow themselves. Loser.");
+
+    // check if followed user and following user already have a relationship
+    const followsResult = await client.query(
+      `SELECT id FROM follows WHERE followed_user_id = $1 AND following_user_id = $2`,
+      [followedUser.id, followingUser.id]
+    );
+
+    const follows = followsResult.rows[0];
+
+    if (!follows)
+      throw new BadRequestError(
+        `${followingUser.username} is not following ${followedUser.username}`
+      );
+
+    const deleteResult = await client.query(
+      `DELETE
+          FROM follows
+          WHERE id = $1
+          RETURNING id`,
+      [follows.id]
+    );
+
+    return `${follower} successfully unfollowed ${followed}.`;
+  }
+
+  /* Favorite another deck and return success/error message 
+    - Throws 404 if user or deck is not found\
+    - Throws 500 if deck is favorited
+  */
+
+  static async favorite(username, ownerUsername, slug) {
+    const [user, owner] = await Promise.all([
+      User.getOr404(username),
+      User.getOr404(ownerUsername),
+    ]);
+
+    const deck = await Deck.getOr404(ownerUsername, slug);
+
+    const favoritesResult = await client.query(
+      `SELECT id FROM favorites WHERE user_id = $1 AND deck_id = $2`,
+      [user.id, deck.id]
+    );
+
+    const favorites = favoritesResult.rows[0];
+
+    if (favorites)
+      throw new BadRequestError(
+        `${user.username} has already favorited ${deck.title}`
+      );
+
+    const insertResult = await client.query(
+      `INSERT INTO favorites (user_id, deck_id)
+      VALUES ($1, $2)
+      RETURNING id, user_id AS "userId", deck_id AS "deckId", created_at AS "createdAt"`,
+      [user.id, deck.id]
+    );
+
+    const result = insertResult.rows[0];
+    result.message = `${username} added ${deck.title} to their favorites.`;
+
+    return result;
+  }
+
+  /* Unfavorite a deck and return success/error message
+    - Throws 404 if user or deck is not found
+    - Throws 500 if deck is not favorited by user
+  */
+
+  static async unfavorite(username, ownerUsername, slug) {
+    const [user, owner] = await Promise.all([
+      User.getOr404(username),
+      User.getOr404(ownerUsername),
+    ]);
+
+    const deck = await Deck.getOr404(ownerUsername, slug);
+
+    const favoritesResult = await client.query(
+      `SELECT id FROM favorites WHERE user_id = $1 AND deck_id = $2`,
+      [user.id, deck.id]
+    );
+
+    const favorites = favoritesResult.rows[0];
+
+    if (!favorites)
+      throw new BadRequestError(
+        `${user.username} has not yet favorited ${deck.title}`
+      );
+
+    const deleteResult = await client.query(
+      `DELETE FROM favorites
+      WHERE id = $1
+      RETURNING id`,
+      [favorites.id]
+    );
+
+    return `${username} successfully removed ${deck.title} from their favorites list.`;
+  }
 }
 
 module.exports = User;
