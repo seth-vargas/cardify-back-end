@@ -3,6 +3,8 @@
 const express = require("express");
 const User = require("../models/user");
 const { NotFoundError } = require("../expressError");
+const Favorite = require("../models/favorite");
+const Follow = require("../models/follow");
 
 const userRouter = new express.Router();
 
@@ -79,21 +81,26 @@ userRouter.delete("/:id", async function (req, res, next) {
 userRouter.get("/:username/following", async function (req, res, next) {
   const { username } = req.params;
   try {
-    const following = await User.getFollowing(username);
+    const user = await User.getOr404(username);
+    const following = user.following;
+
     return res.json({ following });
   } catch (error) {
     return next(error);
   }
 });
+
 userRouter.get("/:username/followers", async function (req, res, next) {
   const { username } = req.params;
   try {
-    const followers = await User.getFollowers(username);
+    const user = await User.getOr404(username);
+    const followers = user.followers;
     return res.json({ followers });
   } catch (error) {
     return next(error);
   }
 });
+
 userRouter.post("/:follower/follow/:followed", async function (req, res, next) {
   const { follower, followed } = req.params;
   try {
@@ -103,6 +110,7 @@ userRouter.post("/:follower/follow/:followed", async function (req, res, next) {
     return next(error);
   }
 });
+
 userRouter.delete(
   "/:follower/unfollow/:followed",
   async function (req, res, next) {
@@ -116,5 +124,43 @@ userRouter.delete(
   }
 );
 
-// module.exports = { userRouter, deckRouter };
+userRouter.get("/:username/favorites", async function (req, res, next) {
+  const { username } = req.params;
+
+  try {
+    const user = await User.getOr404(username);
+    const favorites = user.favorites;
+    return res.json({ favorites });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+userRouter.post(
+  "/:username/favorites/:ownerUsername/decks/:slug",
+  async function (req, res, next) {
+    const { username, ownerUsername, slug } = req.params;
+
+    try {
+      const newFavorite = await User.favorite(username, ownerUsername, slug);
+      return res.status(201).json({ newFavorite });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+userRouter.delete(
+  "/:username/favorites/:ownerUsername/decks/:slug",
+  async function (req, res, next) {
+    const { username, ownerUsername, slug } = req.params;
+    try {
+      const message = await User.unfavorite(username, ownerUsername, slug);
+      return res.json({ message });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
 module.exports = { userRouter };
