@@ -16,12 +16,8 @@
 - [x] Add deck to list
 - [x] Follow a user
 - [x] Unfollow a user
-- [ ] Pin a deck
-- [ ] Un-pin a deck
-- [ ] Like a deck
-- [ ] Un-like a deck
-- [ ] Make deck public
-- [ ] Make deck private
+- [x] Favorite a deck
+- [x] Unfavorite a deck
 
 ---
 
