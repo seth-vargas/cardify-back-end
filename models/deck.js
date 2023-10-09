@@ -9,14 +9,6 @@ class Deck {
   /* Return list of all relevant decks => {decks: [{<deck>}, ...]} */
 
   static async getAll(username, { isPublic = null }) {
-    const userResult = await client.query(
-      `SELECT id from users where username = $1`,
-      [username]
-    );
-
-    if (!userResult.rows[0])
-      throw new NotFoundError(`No user found with username: ${username}`);
-
     let query = `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt" FROM decks`;
 
     let queryValues = [username];
@@ -53,7 +45,7 @@ class Deck {
     - throws 404 if not found. 
   */
 
-  static async get(username, title) {
+  static async getOr404(username, title) {
     const result = await client.query(
       `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
       FROM decks
