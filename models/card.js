@@ -7,11 +7,12 @@ class Card {
   /* getAll - returns a list of all relevant cards */
 
   static async getAll(username, slug) {
+    console.log(slug);
     const result = await client.query(
-      `SELECT id, deck_id AS "deckId", username, front, back, created_at AS "createdAt"
+      `SELECT id, deck_slug AS "deckSlug", username, front, back, created_at AS "createdAt"
       FROM cards
       WHERE username = $1
-      AND slug = $2`,
+      AND deck_slug = $2`,
       [username, slug]
     );
     return result.rows;
@@ -23,7 +24,7 @@ class Card {
 
   static async get(id) {
     const result = await client.query(
-      `SELECT id, deck_id AS "deckId", username, front, back, created_at AS "createdAt"
+      `SELECT id, deck_slug AS "deckSlug", username, front, back, created_at AS "createdAt"
       FROM cards 
       WHERE id = $1`,
       [id]
@@ -35,19 +36,20 @@ class Card {
     returns JSON of created card data.
     throws 404 if not found. */
 
-  static async create({ deckId, username, front, back }) {
+  static async create({ deckId, deckSlug, username, front, back }) {
+    console.log(deckSlug);
     const query = `
       INSERT INTO 
-        cards (deck_id, username, front, back)
+        cards (deck_slug, username, front, back)
         VALUES ($1, $2, $3, $4)
         RETURNING 
-          id,
-          deck_id AS "deckId", 
+          id, 
+          deck_slug AS "deckSlug",
           username, 
           front, 
           back, 
           created_at AS "createdAt"`;
-    const result = await client.query(query, [deckId, username, front, back]);
+    const result = await client.query(query, [deckSlug, username, front, back]);
 
     return result.rows[0];
   }

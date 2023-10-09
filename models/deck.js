@@ -29,13 +29,14 @@ class Deck {
 
     for (const deck of decks) {
       const cardResult = await client.query(
-        `SELECT id, deck_id, username, front, back, created_at
+        `SELECT id, username, front, back, created_at
         FROM cards
-        WHERE deck_id = $1`,
-        [deck.id]
+        WHERE deck_slug = $1`,
+        [deck.slug]
       );
 
       deck.cards = cardResult.rows;
+      deck.tags = await Deck.getTagList(deck.id);
     }
 
     return decks;
@@ -45,27 +46,28 @@ class Deck {
     - throws 404 if not found. 
   */
 
-  static async getOr404(username, title) {
+  static async getOr404(username, slug) {
     const result = await client.query(
       `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
       FROM decks
       WHERE username = $1
       AND slug = $2`,
-      [username, title]
+      [username, slug]
     );
 
     const deck = result.rows[0];
 
-    if (!deck) throw new NotFoundError(`Deck not found: ${title}`);
+    if (!deck) throw new NotFoundError(`Deck not found: ${slug}`);
 
     const cardResult = await client.query(
-      `SELECT id, deck_id, username, front, back, created_at
+      `SELECT id, username, front, back, created_at
       FROM cards
-      WHERE deck_id = $1`,
-      [deck.id]
+      WHERE deck_slug = $1`,
+      [slug]
     );
 
     deck.cards = cardResult.rows;
+    deck.tags = await Deck.getTagList(deck.id);
 
     return deck;
   }
@@ -97,18 +99,18 @@ class Deck {
   /* Removes deck from db and return succes / fail message => {<message>}
     throws 404 if not found. */
 
-  static async remove(username, title) {
+  static async remove(username, slug) {
     const result = await client.query(
       `DELETE
         FROM decks
         WHERE username = $1
         AND slug = $2
         RETURNING id`,
-      [username, slug(title)]
+      [username, slug]
     );
     const deck = result.rows[0];
 
-    if (!deck) throw new NotFoundError(`No deck: ${id}`);
+    if (!deck) throw new NotFoundError(`No deck: ${slug}`);
   }
 
   // TODO: Get AI generated questions for each card in a deck
@@ -118,6 +120,28 @@ class Deck {
     // get back 3 incorrect answers for the card
     // return => {cards: [{front (question), back (answer), incorrectAnswer1, incorrectAnswer2, incorrectAnswer3}, ...]}
   }
+
+  static async getTagList(id) {
+    const deckTagResponse = await client.query(
+      `SELECT * FROM decks_tags WHERE deck_id = $1`,
+      [id]
+    );
+    const deckTags = deckTagResponse.rows;
+
+    let tags = [];
+    for (const deckTag of deckTags) {
+      const tagNameResp = await client.query(
+        `SELECT * FROM tags WHERE id = $1`,
+        [deckTag.tag_id]
+      );
+      tags.push(tagNameResp.rows[0].tag_name);
+    }
+    return tags;
+  }
+
+  // TODO: static async addTag(deck, tag) {}
+
+  // TODO: static async removeTag(deck, tag) {}
 }
 
 module.exports = Deck;

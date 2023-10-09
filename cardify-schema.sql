@@ -29,17 +29,14 @@ CREATE TABLE
         username TEXT NOT NULL REFERENCES users (username) ON DELETE CASCADE,
         is_public BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMP NOT NULL DEFAULT now (),
-        -- TODO: Fix this, it is not working
-        -- UNIQUE (username, title, slug)
-        UNIQUE (username, title)
+        UNIQUE (username, title),
+        UNIQUE (username, slug)
     );
 
 CREATE TABLE
     cards (
         id SERIAL PRIMARY KEY,
-        deck_id INTEGER NOT NULL REFERENCES decks (id) ON DELETE CASCADE,
-        -- TODO: Fix this, it is not working :( 
-        -- deck_slug TEXT NOT NULL REFERENCES decks (slug) ON DELETE CASCADE,
+        deck_slug TEXT NOT NULL,
         username TEXT NOT NULL REFERENCES users (username) ON DELETE CASCADE,
         front VARCHAR(50) NOT NULL,
         back VARCHAR(100) NOT NULL,
@@ -132,34 +129,34 @@ VALUES
 
 -- Insert data into cards table for Programming Basics (Deck ID: 1)
 INSERT INTO
-    cards (deck_id, username, front, back)
+    cards (deck_slug, username, front, back)
 VALUES
     (
-        1,
+        'programming-basics',
         'user1',
         'What is a variable?',
         'A storage location with a name and a value.'
     ),
     (
-        1,
+        'programming-basics',
         'user1',
         'What is a loop?',
         'A control structure for repeating a block of code.'
     ),
     (
-        1,
+        'programming-basics',
         'user1',
         'What is an array?',
         'A data structure that stores a collection of elements.'
     ),
     (
-        1,
+        'programming-basics',
         'user1',
         'What is a function?',
         'A reusable block of code that performs a specific task.'
     ),
     (
-        1,
+        'programming-basics',
         'user1',
         'What is OOP?',
         'Object-Oriented Programming is a programming paradigm based on objects.'
@@ -167,34 +164,34 @@ VALUES
 
 -- Insert data into cards table for Science Trivia (Deck ID: 2)
 INSERT INTO
-    cards (deck_id, username, front, back)
+    cards (deck_slug, username, front, back)
 VALUES
     (
-        2,
+        'science-trivia',
         'user2',
         'Who discovered penicillin?',
         'Alexander Fleming.'
     ),
     (
-        2,
+        'science-trivia',
         'user2',
         'What is the chemical symbol for water?',
         'H2O'
     ),
     (
-        2,
+        'science-trivia',
         'user2',
         'What is the largest planet in our solar system?',
         'Jupiter'
     ),
     (
-        2,
+        'science-trivia',
         'user2',
         'What is the speed of light?',
         '299,792,458 meters per second'
     ),
     (
-        2,
+        'science-trivia',
         'user2',
         'What is photosynthesis?',
         'The process by which plants convert sunlight into energy.'
@@ -202,24 +199,34 @@ VALUES
 
 -- Insert data into cards table for Math Quiz (Deck ID: 3)
 INSERT INTO
-    cards (deck_id, username, front, back)
+    cards (deck_slug, username, front, back)
 VALUES
-    (3, 'user1', 'What is 2 + 2?', '4'),
-    (3, 'user1', 'What is the square root of 16?', '4'),
     (
-        3,
+        'math-quiz',
+        'user1',
+        'What is the sum of 2 + 2?',
+        '4'
+    ),
+    (
+        'math-quiz',
+        'user1',
+        'What is the square root of 16?',
+        '4'
+    ),
+    (
+        'math-quiz',
         'user1',
         'What is the value of π (pi)?',
         '3.14159265359'
     ),
     (
-        3,
+        'math-quiz',
         'user1',
         'What is the area formula for a rectangle?',
         'Length x Width'
     ),
     (
-        3,
+        'math-quiz',
         'user1',
         'What is the Pythagorean theorem?',
         'a^2 + b^2 = c^2'

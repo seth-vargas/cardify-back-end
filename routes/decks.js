@@ -35,7 +35,7 @@ deckRouter.get("/:title", async function (req, res, next) {
   const { username, title } = req.params;
 
   try {
-    const deck = await Deck.get(username, title);
+    const deck = await Deck.getOr404(username, title);
     return res.json({ deck });
   } catch (error) {
     return next(error);
