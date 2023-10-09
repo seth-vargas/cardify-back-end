@@ -30,7 +30,6 @@
 - [x] Create a deck
 - [ ] Edit a deck
 - [x] Delete a deck
-- [ ] Toggle publicity
 - [ ] Add tag
 - [ ] Remove tag
 
