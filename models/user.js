@@ -79,7 +79,6 @@ class User {
     user.followers = await User.getFollowers(user);
     user.following = await User.getFollowing(user);
     user.favorites = await User.getFavorites(user);
-    // user.pinned = await User.getPinned(user); TODO:
 
     return user;
   }
