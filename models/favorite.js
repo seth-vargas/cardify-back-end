@@ -11,7 +11,20 @@ class Favorite {
       [user.id]
     );
 
-    return favoritesResult.rows;
+    const favRelationship = favoritesResult.rows;
+
+    const favorites = [];
+
+    for (let rel of favRelationship) {
+      const deckResult = await client.query(
+        `SELECT * FROM decks
+        WHERE id = $1`,
+        [rel.deckId]
+      );
+      favorites.push(deckResult.rows[0]);
+    }
+
+    return favorites;
   }
 }
 
