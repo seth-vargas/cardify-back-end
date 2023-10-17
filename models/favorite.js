@@ -21,7 +21,9 @@ class Favorite {
         WHERE id = $1`,
         [rel.deckId]
       );
-      favorites.push(deckResult.rows[0]);
+      const deck = deckResult.rows[0];
+      deck.tags = await Deck.getTagList(deck.id);
+      favorites.push(deck);
     }
 
     return favorites;
