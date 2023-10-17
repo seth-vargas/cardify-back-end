@@ -1,12 +1,51 @@
+const bcrypt = require("bcrypt");
+
 const client = require("../db");
-const { BadRequestError, NotFoundError } = require("../expressError");
+const { BCRYPT_WORK_FACTOR } = require("../config.js");
+
+const {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} = require("../expressError");
+
 const Deck = require("./deck");
 const Favorite = require("./favorite");
 const Follow = require("./follow");
 
 /* Model for users */
 
+const commonReturnData = `id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"`;
+
 class User {
+  /* authenticate user with username, password. 
+   - Returns { username, first_name, last_name, email, is_admin }
+   - Throws UnauthorizedError is user not found or wrong password.
+  */
+
+  static async authenticate(username, password) {
+    // try to find the user first
+    const result = await db.query(
+      `SELECT ${commonReturnData}
+      FROM users
+      WHERE username = $1`,
+      [username]
+    );
+
+    const user = result.rows[0];
+
+    if (user) {
+      // compare hashed password to a new hash from password
+      const isValid = await bcrypt.compare(password, user.password);
+      if (isValid === true) {
+        delete user.password;
+        return user;
+      }
+    }
+
+    throw new UnauthorizedError("Invalid username/password");
+  }
+
   /* Returns a list of all relevant users => {users: [{<user>}, ...]}
     - Optionally filter by publicity, admin access, usernames, first and last names.
     - Optionally alter orderBy.
@@ -21,7 +60,7 @@ class User {
     orderBy = "id",
   }) {
     let query = `
-    SELECT id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"
+    SELECT ${commonReturnData}
     FROM users`;
 
     let whereExpressions = [];
@@ -68,7 +107,7 @@ class User {
 
   static async getOr404(username) {
     const result = await client.query(
-      `SELECT id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"
+      `SELECT ${commonReturnData}
       FROM users 
       WHERE username = $1`,
       [username]
@@ -85,8 +124,9 @@ class User {
     return user;
   }
 
-  /* Add a new user to db and return JSON of created user data => {user: {<user>}}
-    - If user exists then throw bad request error.
+  /* Register user with data.
+    - Returns { username, firstName, lastName, email, isAdmin, isPublic }
+    - Throws BadRequestError on duplicates.
   */
 
   static async create({
@@ -98,33 +138,29 @@ class User {
     isAdmin,
     isPublic,
   }) {
-    const user = await client.query(
+    const duplicateCheck = await client.query(
       `SELECT id 
       FROM users 
       WHERE username = $1`,
       [username]
     );
 
-    if (user.rows[0]) {
+    if (duplicateCheck.rows[0]) {
       throw new BadRequestError(`Username ${username} exists.`);
     }
 
-    const query = `
-      INSERT INTO 
-        users (username, password, first_name, last_name, email, is_admin, is_public)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"`;
-    const result = await client.query(query, [
-      username,
-      password,
-      firstName,
-      lastName,
-      email,
-      isAdmin,
-      isPublic,
-    ]);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+    const result = await client.query(
+      `INSERT INTO 
+      users (username, password, first_name, last_name, email, is_admin, is_public)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING ${commonReturnData}`,
+      [username, hashedPassword, firstName, lastName, email, isAdmin, isPublic]
+    );
 
-    return result.rows[0];
+    const user = result.rows[0];
+
+    return user;
   }
 
   /* update(username, data) - user can change values.
