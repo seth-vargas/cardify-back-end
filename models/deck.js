@@ -8,19 +8,36 @@ const { isPromise } = require("util/types");
 class Deck {
   /* Return list of all relevant decks => {decks: [{<deck>}, ...]} */
 
-  static async getAll(username, { isPublic = null }) {
+  static async getAll(
+    username = null,
+    { term = null, isPublic = null, orderBy = null }
+  ) {
     let query = `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt" FROM decks`;
 
-    let queryValues = [username];
-    let whereExpressions = [`username = $${queryValues.length}`];
+    let queryValues = [];
+    let whereExpressions = [];
 
     if (isPublic) {
       queryValues.push(isPublic);
       whereExpressions.push(`is_public = $${queryValues.length}`);
     }
 
+    if (username) {
+      queryValues.push(username);
+      whereExpressions.push(`username = $${queryValues.length}`);
+    }
+
+    if (term) {
+      queryValues.push(`%${term}%`);
+      whereExpressions.push(`title ILIKE $${queryValues.length}`);
+    }
+
     if (whereExpressions.length > 0) {
       query += " WHERE " + whereExpressions.join(" AND ");
+    }
+
+    if (orderBy) {
+      query += ` ORDER BY ${orderBy}`;
     }
 
     const deckResult = await client.query(query, queryValues);
@@ -74,7 +91,8 @@ class Deck {
 
   /* create(data) - add new deck to db and return JSON of new deck => {deck: {<deck>}} */
 
-  static async create({ title, username, isPublic }) {
+  static async create({ username, title, isPublic }) {
+    console.log(username, title, isPublic);
     const query = `
       INSERT INTO 
         decks (title, slug, username, is_public)

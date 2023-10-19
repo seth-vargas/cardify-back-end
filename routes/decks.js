@@ -3,10 +3,8 @@
 const express = require("express");
 const Deck = require("../models/deck");
 const { NotFoundError } = require("../expressError");
-const { userRouter } = require("./users");
 
-const deckRouter = new express.Router({ mergeParams: true });
-userRouter.use("/:username/decks", deckRouter);
+const deckRouter = new express.Router();
 
 /* Returns a list of decks
   - optional filters: username, isPublic, orderBy
@@ -32,7 +30,8 @@ deckRouter.get("/", async function (req, res, next) {
 */
 
 deckRouter.get("/:title", async function (req, res, next) {
-  const { username, title } = req.params;
+  const { title } = req.params;
+  const { username } = req.query;
 
   try {
     const deck = await Deck.getOr404(username, title);
@@ -49,9 +48,6 @@ deckRouter.get("/:title", async function (req, res, next) {
 */
 
 deckRouter.post("/", async function (req, res, next) {
-  const username = req.params.username;
-  req.body.username = username;
-
   try {
     const deck = await Deck.create(req.body);
     return res.status(201).json({ deck });
