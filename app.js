@@ -6,7 +6,7 @@ const { NotFoundError } = require("./expressError");
 
 // TODO - require routes here
 const cardRoutes = require("./routes/cards");
-const deckRoutes = require("./routes/decks");
+const { deckRouter } = require("./routes/decks");
 const { userRouter } = require("./routes/users");
 
 const app = express();
@@ -17,6 +17,7 @@ app.use(morgan("dev"));
 
 app.use("/cards", cardRoutes);
 app.use("/api/users", userRouter);
+app.use("/api/decks", deckRouter);
 
 app.use((req, res, next) => {
   return next(new NotFoundError());
