@@ -5,6 +5,8 @@ const { isPromise } = require("util/types");
 
 /* Model for decks */
 
+const commonQuery = `id, title, description, slug, username, is_public AS "isPublic", created_at AS "createdAt"`;
+
 class Deck {
   /* Return list of all relevant decks => {decks: [{<deck>}, ...]} */
 
@@ -12,7 +14,7 @@ class Deck {
     username = null,
     { term = null, isPublic = null, orderBy = null }
   ) {
-    let query = `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt" FROM decks`;
+    let query = `SELECT ${commonQuery} FROM decks`;
 
     let queryValues = [];
     let whereExpressions = [];
@@ -65,7 +67,7 @@ class Deck {
 
   static async getOr404(username, slug) {
     const result = await client.query(
-      `SELECT id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"
+      `SELECT ${commonQuery}
       FROM decks
       WHERE username = $1
       AND slug = $2`,
@@ -91,15 +93,15 @@ class Deck {
 
   /* create(data) - add new deck to db and return JSON of new deck => {deck: {<deck>}} */
 
-  static async create({ username, title, isPublic }) {
-    console.log(username, title, isPublic);
+  static async create({ username, title, description, isPublic }) {
     const query = `
       INSERT INTO 
-        decks (title, slug, username, is_public)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, title, slug, username, is_public AS "isPublic", created_at AS "createdAt"`;
+        decks (title, description, slug, username, is_public)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING ${commonQuery}`;
     const result = await client.query(query, [
       title,
+      description,
       slug(title),
       username,
       isPublic,
