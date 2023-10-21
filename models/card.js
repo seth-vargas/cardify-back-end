@@ -36,8 +36,7 @@ class Card {
     returns JSON of created card data.
     throws 404 if not found. */
 
-  static async create({ deckId, deckSlug, username, front, back }) {
-    console.log(deckSlug);
+  static async create({ slug, username, front, back }) {
     const query = `
       INSERT INTO 
         cards (deck_slug, username, front, back)
@@ -49,7 +48,7 @@ class Card {
           front, 
           back, 
           created_at AS "createdAt"`;
-    const result = await client.query(query, [deckSlug, username, front, back]);
+    const result = await client.query(query, [slug, username, front, back]);
 
     return result.rows[0];
   }
