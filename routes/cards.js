@@ -51,10 +51,7 @@ cardRouter.get("/:id", async function (req, res, next) {
  */
 
 cardRouter.post("/", async function (req, res, next) {
-  const { username, slug } = req.params;
   try {
-    req.body.deckSlug = slug;
-    req.body.username = username;
     const card = await Card.create(req.body);
     return res.status(201).json({ card });
   } catch (error) {
