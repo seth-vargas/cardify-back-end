@@ -25,14 +25,16 @@ class User {
 
   static async authenticate(username, password) {
     // try to find the user first
-    const result = await db.query(
-      `SELECT ${commonReturnData}
+    const result = await client.query(
+      `SELECT ${commonReturnData}, password
       FROM users
       WHERE username = $1`,
       [username]
     );
 
     const user = result.rows[0];
+
+    console.log(user);
 
     if (user) {
       // compare hashed password to a new hash from password
