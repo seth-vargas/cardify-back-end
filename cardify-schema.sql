@@ -24,7 +24,7 @@ CREATE TABLE
 CREATE TABLE
     decks (
         id SERIAL PRIMARY KEY,
-        title VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
         slug VARCHAR(255) NOT NULL,
         username TEXT NOT NULL REFERENCES users (username) ON DELETE CASCADE,
@@ -39,15 +39,15 @@ CREATE TABLE
         id SERIAL PRIMARY KEY,
         deck_slug TEXT NOT NULL,
         username TEXT NOT NULL REFERENCES users (username) ON DELETE CASCADE,
-        front VARCHAR(50) NOT NULL,
-        back VARCHAR(100) NOT NULL,
+        front TEXT NOT NULL,
+        back TEXT NOT NULL,
         created_at TIMESTAMP NOT NULL DEFAULT now ()
     );
 
 CREATE TABLE
     tags (
         id SERIAL PRIMARY KEY,
-        tag_name VARCHAR(15) UNIQUE NOT NULL
+        tag_name VARCHAR(255) UNIQUE NOT NULL
     );
 
 CREATE TABLE
