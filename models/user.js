@@ -34,12 +34,10 @@ class User {
 
     const user = result.rows[0];
 
-    console.log(user);
-
     if (user) {
       // compare hashed password to a new hash from password
       const isValid = await bcrypt.compare(password, user.password);
-      if (isValid === true) {
+      if (isValid) {
         delete user.password;
         return user;
       }
@@ -131,13 +129,13 @@ class User {
     - Throws BadRequestError on duplicates.
   */
 
-  static async create({
+  static async signup({
     username,
     password,
     firstName,
     lastName,
     email,
-    isAdmin,
+    isAdmin = false,
     isPublic,
   }) {
     const duplicateCheck = await client.query(
@@ -148,7 +146,7 @@ class User {
     );
 
     if (duplicateCheck.rows[0]) {
-      throw new BadRequestError(`Username ${username} exists.`);
+      throw new BadRequestError(`Sorry, that username is taken.`);
     }
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
@@ -169,7 +167,6 @@ class User {
     returns JSON of updated user.
     throws 404 if not found. */
   // TODO: The whole thing
-  static async update(username, data) {}
 
   /* Remove a user from database and return success/error message => {<message>}
     - throws 404 if not found. 
