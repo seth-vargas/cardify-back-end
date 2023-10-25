@@ -53,7 +53,7 @@ userRouter.get("/:username", async function (req, res, next) {
 
 userRouter.post("/", async function (req, res, next) {
   try {
-    const user = await User.create(req.body);
+    const user = await User.signup(req.body);
     return res.status(201).json({ user });
   } catch (error) {
     return next(error);
@@ -67,6 +67,17 @@ userRouter.post("/", async function (req, res, next) {
   
   Authorization: Admin, logged in user
 */
+
+userRouter.patch("/:id", async function (req, res, next) {
+  const { id } = req.params;
+  try {
+    const dataToUpdate = req.body;
+    const user = await User.edit(id, dataToUpdate);
+    return res.json({ user });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 userRouter.delete("/:id", async function (req, res, next) {
   const { id } = req.params;
