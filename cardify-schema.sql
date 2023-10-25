@@ -13,9 +13,9 @@ CREATE TABLE
         id SERIAL PRIMARY KEY,
         username VARCHAR(25) UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        email TEXT NOT NULL CHECK (position('@' IN email) > 1),
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
+        email TEXT CHECK (position('@' IN email) > 1),
         is_admin BOOLEAN NOT NULL DEFAULT FALSE,
         is_public BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMP NOT NULL DEFAULT now ()
