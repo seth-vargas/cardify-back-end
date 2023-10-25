@@ -64,12 +64,12 @@ deckRouter.post("/", async function (req, res, next) {
   Authorization: Admin, logged in user
 */
 
-deckRouter.delete("/:title", async function (req, res, next) {
-  const { username, title } = req.params;
+deckRouter.delete("/:deckId", async function (req, res, next) {
+  const { deckId } = req.params;
 
   try {
-    await Deck.remove(username, title);
-    return res.json({ deleted: title });
+    await Deck.remove(deckId);
+    return res.json({ deleted: deckId });
   } catch (error) {
     return next(error);
   }
