@@ -119,18 +119,17 @@ class Deck {
   /* Removes deck from db and return succes / fail message => {<message>}
     throws 404 if not found. */
 
-  static async remove(username, slug) {
+  static async remove(deckId) {
     const result = await client.query(
       `DELETE
         FROM decks
-        WHERE username = $1
-        AND slug = $2
+        WHERE id = $1
         RETURNING id`,
-      [username, slug]
+      [deckId]
     );
     const deck = result.rows[0];
 
-    if (!deck) throw new NotFoundError(`No deck: ${slug}`);
+    if (!deck) throw new NotFoundError(`No deck: ${deckId}`);
   }
 
   // TODO: Get AI generated questions for each card in a deck
