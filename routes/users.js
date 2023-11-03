@@ -77,11 +77,11 @@ userRouter.patch("/:username", async function (req, res, next) {
   }
 });
 
-userRouter.delete("/:id", async function (req, res, next) {
-  const { id } = req.params;
+userRouter.delete("/:username", async function (req, res, next) {
+  const { username } = req.params;
   try {
-    await User.remove(id);
-    return res.json({ deleted: id });
+    await User.remove(username);
+    return res.json({ deleted: username });
   } catch (error) {
     return next(error);
   }
