@@ -56,7 +56,17 @@ deckRouter.post("/", async function (req, res, next) {
   }
 });
 
-// TODO: PATCH /:id
+deckRouter.patch("/:deckId", async function (req, res, next) {
+  const { deckId } = req.params;
+
+  try {
+    const dataToUpdate = req.body;
+    const deck = await Deck.update(deckId, dataToUpdate);
+    return res.json({ deck });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 /* Removes deck from db and returns JSON with id
   - If no deck, nothing happens
