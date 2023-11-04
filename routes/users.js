@@ -69,8 +69,8 @@ userRouter.post("/", async function (req, res, next) {
 userRouter.patch("/:username", async function (req, res, next) {
   const { username } = req.params;
   try {
-    const dataToUpdate = req.body;
-    const user = await User.update(username, dataToUpdate);
+    const data = req.body;
+    const user = await User.update(username, data);
     return res.json({ user });
   } catch (error) {
     return next(error);

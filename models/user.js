@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 
 const client = require("../db");
 const { BCRYPT_WORK_FACTOR } = require("../config.js");
+const { sqlForPartialUpdate } = require("../helpers/sql");
 
 const {
   BadRequestError,
@@ -168,19 +169,25 @@ class User {
     throws 404 if not found. */
 
   static async update(username, data) {
+    if (data.email === "") delete data.email;
+    if (data.firstName === "") delete data.firstName;
+    if (data.lastName === "") delete data.lastName;
+
     const { setCols, values } = sqlForPartialUpdate(data, {
-      firstName: "num_employees",
-      lastName: "logo_url",
+      firstName: "first_name",
+      lastName: "last_name",
       isAdmin: "is_admin",
       isPublic: "is_public",
     });
 
+    let userIndex = "$" + (values.length + 1);
+
     const result = await client.query(
       `UPDATE users
       SET ${setCols} 
-      WHERE username = ${username}
+      WHERE username = ${userIndex}
       RETURNING ${common}`,
-      [...values]
+      [...values, username]
     );
 
     const user = result.rows[0];
