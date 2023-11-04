@@ -2,10 +2,11 @@ const slug = require("slug");
 const client = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
 const { isPromise } = require("util/types");
+const { sqlForPartialUpdate } = require("../helpers/sql");
 
 /* Model for decks */
 
-const commonQuery = `id, title, description, slug, username, is_public AS "isPublic", created_at AS "createdAt"`;
+const common = `id, title, description, slug, username, is_public AS "isPublic", created_at AS "createdAt"`;
 
 class Deck {
   /* Return list of all relevant decks => {decks: [{<deck>}, ...]} */
@@ -14,7 +15,7 @@ class Deck {
     username = null,
     { term = null, isPublic = null, orderBy = null }
   ) {
-    let query = `SELECT ${commonQuery} FROM decks`;
+    let query = `SELECT ${common} FROM decks`;
 
     let queryValues = [];
     let whereExpressions = [];
@@ -67,7 +68,7 @@ class Deck {
 
   static async getOr404(username, slug) {
     const result = await client.query(
-      `SELECT ${commonQuery}
+      `SELECT ${common}
       FROM decks
       WHERE username = $1
       AND slug = $2`,
@@ -98,7 +99,7 @@ class Deck {
       INSERT INTO 
         decks (title, description, slug, username, is_public)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING ${commonQuery}`;
+      RETURNING ${common}`;
     const result = await client.query(query, [
       title,
       description,
@@ -113,8 +114,25 @@ class Deck {
   /* update(id, data) - update deck info. 
     throws 404 if not found. */
 
-  // TODO: The whole thing
-  static async update(id, data) {}
+  static async update(deckId, data) {
+    const { setCols, values } = sqlForPartialUpdate(data, {
+      isPublic: "is_public",
+    });
+
+    const result = await client.query(
+      `UPDATE decks
+      SET ${setCols} 
+      WHERE id = ${deckId}
+      RETURNING ${common}`,
+      [...values]
+    );
+
+    const deck = result.rows[0];
+
+    if (!deck) throw new NotFoundError(`No deck found: ${deckId}`);
+
+    return deck;
+  }
 
   /* Removes deck from db and return succes / fail message => {<message>}
     throws 404 if not found. */

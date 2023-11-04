@@ -60,19 +60,17 @@ userRouter.post("/", async function (req, res, next) {
   }
 });
 
-// TODO: PATCH /:id
-
 /* Removes user from db and returns JSON with id
   - If no user, nothing happens
   
   Authorization: Admin, logged in user
 */
 
-userRouter.patch("/:id", async function (req, res, next) {
-  const { id } = req.params;
+userRouter.patch("/:username", async function (req, res, next) {
+  const { username } = req.params;
   try {
     const dataToUpdate = req.body;
-    const user = await User.edit(id, dataToUpdate);
+    const user = await User.update(username, dataToUpdate);
     return res.json({ user });
   } catch (error) {
     return next(error);

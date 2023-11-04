@@ -15,7 +15,7 @@ const Follow = require("./follow");
 
 /* Model for users */
 
-const commonReturnData = `id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"`;
+const common = `id, username, first_name AS "firstName", last_name AS "lastName", email, is_admin AS "isAdmin", is_public AS "isPublic", created_at AS "createdAt"`;
 
 class User {
   /* authenticate user with username, password. 
@@ -26,7 +26,7 @@ class User {
   static async authenticate(username, password) {
     // try to find the user first
     const result = await client.query(
-      `SELECT ${commonReturnData}, password
+      `SELECT ${common}, password
       FROM users
       WHERE username = $1`,
       [username]
@@ -60,7 +60,7 @@ class User {
     orderBy = "id",
   }) {
     let query = `
-    SELECT ${commonReturnData}
+    SELECT ${common}
     FROM users`;
 
     let whereExpressions = [];
@@ -107,7 +107,7 @@ class User {
 
   static async getOr404(username) {
     const result = await client.query(
-      `SELECT ${commonReturnData}
+      `SELECT ${common}
       FROM users 
       WHERE username = $1`,
       [username]
@@ -154,7 +154,7 @@ class User {
       `INSERT INTO 
       users (username, password, first_name, last_name, email, is_admin, is_public)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING ${commonReturnData}`,
+      RETURNING ${common}`,
       [username, hashedPassword, firstName, lastName, email, isAdmin, isPublic]
     );
 
@@ -166,7 +166,29 @@ class User {
   /* update(username, data) - user can change values.
     returns JSON of updated user.
     throws 404 if not found. */
-  // TODO: The whole thing
+
+  static async update(username, data) {
+    const { setCols, values } = sqlForPartialUpdate(data, {
+      firstName: "num_employees",
+      lastName: "logo_url",
+      isAdmin: "is_admin",
+      isPublic: "is_public",
+    });
+
+    const result = await client.query(
+      `UPDATE users
+      SET ${setCols} 
+      WHERE username = ${username}
+      RETURNING ${common}`,
+      [...values]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) throw new NotFoundError(`No user: ${username}`);
+
+    return user;
+  }
 
   /* Remove a user from database and return success/error message => {<message>}
     - throws 404 if not found. 
