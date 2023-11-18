@@ -61,6 +61,13 @@ deckRouter.patch("/:deckId", async function (req, res, next) {
 
   try {
     const dataToUpdate = req.body;
+    console.log(dataToUpdate);
+    for (const key in dataToUpdate) {
+      if (dataToUpdate[key] === "") {
+        delete dataToUpdate[key];
+      }
+    }
+    console.log(dataToUpdate);
     const deck = await Deck.update(deckId, dataToUpdate);
     return res.json({ deck });
   } catch (error) {
